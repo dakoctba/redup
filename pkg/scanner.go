@@ -3,12 +3,14 @@ package pkg
 import (
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // FileInfo representa informações básicas de um arquivo
 type FileInfo struct {
-	Path string
-	Size int64
+	Path    string
+	Size    int64
+	ModTime time.Time
 }
 
 // Scanner é responsável por escanear diretórios e encontrar arquivos
@@ -62,10 +64,16 @@ func (s *Scanner) ScanDirectory(root string) ([]FileInfo, error) {
 			return nil
 		}
 
+		// Ignorar arquivos vazios (0 bytes)
+		if info.Size() == 0 {
+			return nil
+		}
+
 		// Adicionar arquivo à lista
 		files = append(files, FileInfo{
-			Path: path,
-			Size: info.Size(),
+			Path:    path,
+			Size:    info.Size(),
+			ModTime: info.ModTime(),
 		})
 
 		return nil

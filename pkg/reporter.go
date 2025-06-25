@@ -14,18 +14,31 @@ func PrintSummary(groups []FileGroup) {
 		return
 	}
 
-	fmt.Printf("Found %d duplicate groups.\n\n", len(groups))
-
-	totalSize := GetTotalDuplicateSize(groups)
-	fmt.Printf("Total space that can be freed: %s\n\n", formatBytes(totalSize))
-
-	for i, group := range groups {
-		fmt.Printf("Group %d (%s):\n", i+1, formatBytes(group.Size))
-		for j, file := range group.Files {
-			fmt.Printf("  [%d] %s\n", j+1, file.Path)
-		}
-		fmt.Println()
+	// Contar total de arquivos duplicados (excluindo o original de cada grupo)
+	totalDuplicates := 0
+	for _, group := range groups {
+		totalDuplicates += len(group.Files) - 1
 	}
+
+	fmt.Printf("Found %d duplicate files:\n\n", totalDuplicates)
+
+	// Mostrar cada grupo de duplicatas
+	for i, group := range groups {
+		if len(group.Files) > 1 {
+			fmt.Printf("[%d] %s\n", i+1, group.Files[0].Path)
+			fmt.Printf("Found %d copies:\n", len(group.Files)-1)
+
+			// Mostrar todas as cópias (excluindo o primeiro arquivo que é considerado o original)
+			for j := 1; j < len(group.Files); j++ {
+				fmt.Printf("  %s\n", group.Files[j].Path)
+			}
+			fmt.Println()
+		}
+	}
+
+	// Mostrar estatísticas
+	totalSize := GetTotalDuplicateSize(groups)
+	fmt.Printf("Total space that can be freed: %s\n", formatBytes(totalSize))
 }
 
 // ExportJSON exporta os resultados em formato JSON

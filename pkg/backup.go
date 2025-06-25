@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,12 +13,19 @@ import (
 // Manager é responsável por gerenciar backups de arquivos duplicados
 type Manager struct {
 	backupDir string
+	yes       bool
+	logFile   string
 }
 
 // NewManager cria uma nova instância do gerenciador de backup
-func NewManager(backupDir string) *Manager {
+func NewManager(backupDir string, yes bool) *Manager {
+	timestamp := time.Now().Format("20060102150405")
+	logFile := fmt.Sprintf("redup-backup-%s.csv", timestamp)
+
 	return &Manager{
 		backupDir: backupDir,
+		yes:       yes,
+		logFile:   logFile,
 	}
 }
 
@@ -27,13 +35,7 @@ func (m *Manager) ProcessDuplicates(groups []FileGroup) error {
 		return nil
 	}
 
-	// Perguntar sobre criação do diretório de backup
-	if !m.confirmBackupCreation() {
-		fmt.Println("Operation cancelled.")
-		return nil
-	}
-
-	// Criar diretório de backup
+	// Criar diretório de backup automaticamente
 	backupPath, err := m.createBackupDirectory()
 	if err != nil {
 		return fmt.Errorf("failed to create backup directory: %w", err)
@@ -53,7 +55,9 @@ func (m *Manager) ProcessDuplicates(groups []FileGroup) error {
 			}
 
 			if m.confirmFileMove(file.Path) {
-				if err := m.moveFileToBackup(file.Path, backupPath); err != nil {
+				// Passar o caminho do arquivo original (primeiro do grupo)
+				originalFilePath := group.Files[0].Path
+				if err := m.moveFileToBackup(file.Path, backupPath, originalFilePath); err != nil {
 					fmt.Printf("Error moving file %s: %v\n", file.Path, err)
 				} else {
 					fmt.Printf("→ Moved to %s\n", m.getBackupPath(file.Path, backupPath))
@@ -63,20 +67,6 @@ func (m *Manager) ProcessDuplicates(groups []FileGroup) error {
 	}
 
 	return nil
-}
-
-// confirmBackupCreation pergunta se deve criar o diretório de backup
-func (m *Manager) confirmBackupCreation() bool {
-	timestamp := time.Now().Format("20060102150405")
-	backupName := fmt.Sprintf("%s_backup", timestamp)
-
-	fmt.Printf("Create backup folder '%s'? [Y/n]: ", backupName)
-
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
-
-	return input == "" || input == "y" || input == "yes"
 }
 
 // createBackupDirectory cria o diretório de backup
@@ -95,6 +85,11 @@ func (m *Manager) createBackupDirectory() (string, error) {
 
 // confirmFileMove pergunta se deve mover um arquivo específico
 func (m *Manager) confirmFileMove(filePath string) bool {
+	// Se a flag --yes está ativada, move automaticamente
+	if m.yes {
+		return true
+	}
+
 	fmt.Printf("[y/N] Move duplicate: %s? ", filePath)
 
 	reader := bufio.NewReader(os.Stdin)
@@ -105,7 +100,7 @@ func (m *Manager) confirmFileMove(filePath string) bool {
 }
 
 // moveFileToBackup move um arquivo para o diretório de backup
-func (m *Manager) moveFileToBackup(filePath, backupPath string) error {
+func (m *Manager) moveFileToBackup(filePath, backupPath, originalFilePath string) error {
 	// Criar a estrutura de diretórios no backup
 	backupFilePath := m.getBackupPath(filePath, backupPath)
 	backupDir := filepath.Dir(backupFilePath)
@@ -119,7 +114,45 @@ func (m *Manager) moveFileToBackup(filePath, backupPath string) error {
 		return fmt.Errorf("failed to move file: %w", err)
 	}
 
+	// Adicionar entrada no arquivo CSV
+	if err := m.addToCSV(originalFilePath, filePath, backupFilePath); err != nil {
+		return fmt.Errorf("failed to add entry to CSV: %w", err)
+	}
+
 	return nil
+}
+
+// addToCSV adiciona uma entrada no arquivo CSV de backup
+func (m *Manager) addToCSV(originalPath, movedPath, backupPath string) error {
+	// Verificar se o arquivo CSV já existe
+	fileExists := false
+	if _, err := os.Stat(m.logFile); err == nil {
+		fileExists = true
+	}
+
+	// Abrir arquivo para escrita (append se existir, criar se não existir)
+	file, err := os.OpenFile(m.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Se o arquivo não existia, escrever cabeçalho
+	if !fileExists {
+		header := []string{"original_path", "moved_path", "backup_path", "timestamp"}
+		if err := writer.Write(header); err != nil {
+			return err
+		}
+	}
+
+	// Escrever linha de dados
+	timestamp := time.Now().Format("2006-01-02T15:04:05")
+	row := []string{originalPath, movedPath, backupPath, timestamp}
+
+	return writer.Write(row)
 }
 
 // getBackupPath calcula o caminho do arquivo no diretório de backup

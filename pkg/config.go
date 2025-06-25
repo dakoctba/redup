@@ -9,4 +9,5 @@ type Config struct {
 	DryRun    bool
 	JSON      bool
 	Version   bool
+	Yes       bool
 }

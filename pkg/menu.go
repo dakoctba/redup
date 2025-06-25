@@ -23,7 +23,7 @@ func NewMenu(config *Config) *Menu {
 		config:    config,
 		scanner:   NewScanner(config.MinSize),
 		hasher:    NewDeduplicatorHasher(config.Checksum),
-		backupMgr: NewManager(config.BackupDir),
+		backupMgr: NewManager(config.BackupDir, config.Yes),
 	}
 }
 

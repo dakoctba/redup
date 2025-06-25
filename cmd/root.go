@@ -21,6 +21,7 @@ var (
 	backupDir string
 	dryRun    bool
 	json      bool
+	yes       bool
 )
 
 // rootCmd represents the base command
@@ -61,6 +62,7 @@ respecting .gitignore rules and providing safe backup options.`,
 			BackupDir: backupDir,
 			DryRun:    dryRun,
 			JSON:      json,
+			Yes:       yes,
 		}
 
 		// Scan directory
@@ -96,7 +98,7 @@ respecting .gitignore rules and providing safe backup options.`,
 
 		// If not dry-run, ask about backup
 		if !config.DryRun {
-			backupManager := pkg.NewManager(config.BackupDir)
+			backupManager := pkg.NewManager(config.BackupDir, config.Yes)
 			if err := backupManager.ProcessDuplicates(duplicateGroups); err != nil {
 				return fmt.Errorf("error processing duplicates: %v", err)
 			}
@@ -113,6 +115,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&backupDir, "backup-dir", "b", ".", "base directory for backup")
 	rootCmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "simulate actions without moving files")
 	rootCmd.Flags().BoolVarP(&json, "json", "j", false, "output results in JSON format")
+	rootCmd.Flags().BoolVarP(&yes, "yes", "y", false, "move automatically all duplicates without asking for confirmation")
 
 	rootCmd.Flags().BoolP("version", "v", false, "Show version number")
 
