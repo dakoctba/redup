@@ -72,13 +72,23 @@ uninstall:
 
 # Processo interativo para criar uma nova versão e release
 release:
-	@echo "Iniciando processo interativo de criação de nova versão e release..."
-	@bin/update_version.sh
+	@echo "Iniciando processo de release com GoReleaser..."
+	@if [ -f .env ]; then \
+		echo "Carregando variáveis de ambiente do arquivo .env..."; \
+		export $$(cat .env | xargs); \
+	fi
+	@echo "Executando GoReleaser..."
+	@goreleaser release --clean
+	@echo "Release concluída com sucesso!"
 
 # Criar uma release em modo snapshot (para testes)
 snapshot:
 	@echo "Creating snapshot release..."
-	@bin/release.sh --snapshot
+	@if [ -f .env ]; then \
+		echo "Carregando variáveis de ambiente do arquivo .env..."; \
+		export $$(cat .env | xargs); \
+	fi
+	@goreleaser release --snapshot --clean
 
 # Exibir informações de ajuda
 help:
