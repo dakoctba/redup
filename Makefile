@@ -75,20 +75,15 @@ release:
 	@echo "Iniciando processo de release com GoReleaser..."
 	@if [ -f .env ]; then \
 		echo "Carregando variáveis de ambiente do arquivo .env..."; \
-		export $$(cat .env | xargs); \
 	fi
 	@echo "Executando GoReleaser..."
-	@goreleaser release --clean
+	@set -a; [ -f .env ] && source .env; set +a; goreleaser release --clean
 	@echo "Release concluída com sucesso!"
 
 # Criar uma release em modo snapshot (para testes)
 snapshot:
 	@echo "Creating snapshot release..."
-	@if [ -f .env ]; then \
-		echo "Carregando variáveis de ambiente do arquivo .env..."; \
-		export $$(cat .env | xargs); \
-	fi
-	@goreleaser release --snapshot --clean
+	@set -a; [ -f .env ] && source .env; set +a; goreleaser release --snapshot --clean
 
 # Exibir informações de ajuda
 help:
