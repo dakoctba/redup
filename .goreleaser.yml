@@ -1,47 +1,87 @@
+# .goreleaser.yml
+# Configuration for GoReleaser
+# https://goreleaser.com
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
+version: 2
+
+project_name: redup
+
 before:
   hooks:
+    # You may remove this if you don't use go modules
     - go mod tidy
 
 builds:
-  - env:
+  -
+    # Main build
+    id: redup
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
+      - windows
     goarch:
       - amd64
       - arm64
-    ignore:
-      - goos: windows
-        goarch: arm64
     ldflags:
-      - -s -w
-      - -X main.Version={{.Version}}
-      - -X main.BuildTime={{.Date}}
-      - -X main.GitCommit={{.Commit}}
+      - -s -w -X github.com/dakoctba/redup/cmd.version={{.Version}} -X github.com/dakoctba/redup/cmd.buildTime={{.Date}} -X github.com/dakoctba/redup/cmd.gitCommit={{.Commit}}
+    main: ./
     binary: redup
 
 archives:
-  - format: tar.gz
+  -
+    # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
-    format_overrides:
-      - goos: windows
-        format: zip
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+    # Archive settings
+    id: redup
     files:
-      - README.md
       - LICENSE
-      - docs/README.md
+      - README.md
+
+    # Default format is tar.gz
+    formats: [tar.gz]
+
+    # Use zip for macOS and Windows
+    format_overrides:
+      - goos: darwin
+        formats: [zip]
+      - goos: windows
+        formats: [zip]
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
+  algorithm: sha256
 
+release:
+  github:
+    owner: dakoctba
+    name: redup
+  draft: false  # Publicação automática
+  prerelease: auto
+  name_template: "{{ .ProjectName }} v{{ .Version }}"
+  mode: replace
+  # Configurar para garantir que os binários sejam publicados
+  ids:
+    - redup
+
+# Explicitly define what to publish
+# Include source code and built binaries
+source:
+  enabled: true
+  name_template: '{{ .ProjectName }}-{{ .Version }}'
+
+# Skip the upload for snapshots
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  name_template: "{{ incpatch .Version }}-SNAPSHOT-{{.ShortCommit}}"
 
 changelog:
   sort: asc
@@ -49,7 +89,7 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-      - '^ci:'
+      - '^chore:'
       - Merge pull request
       - Merge branch
 

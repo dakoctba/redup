@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Estas variáveis serão substituídas pelo Makefile durante a compilação
 var (
 	Version   = "dev"
 	BuildTime = "unknown"
@@ -25,6 +26,7 @@ func init() {
 }
 
 func main() {
+	// Passar as variáveis de versão para o cmd
 	cmd.SetVersionInfo(Version, BuildTime, GitCommit)
 	cmd.Execute()
 }
