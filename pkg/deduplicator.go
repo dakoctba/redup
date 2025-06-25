@@ -29,7 +29,7 @@ func NewDeduplicatorHasher(algorithm string) *DeduplicatorHasher {
 func (h *DeduplicatorHasher) GroupByChecksum(files []FileInfo) ([]FileGroup, error) {
 	checksumMap := make(map[string][]FileInfo)
 
-	for _, file := range files {
+	for i, file := range files {
 		// Log dinâmico na mesma linha - limpa completamente a linha anterior
 		fmt.Printf("\r\033[KAnalisando: %s", file.Path)
 		checksum, err := h.hasher.CalculateChecksum(file.Path)
@@ -39,6 +39,11 @@ func (h *DeduplicatorHasher) GroupByChecksum(files []FileInfo) ([]FileGroup, err
 		}
 
 		checksumMap[checksum] = append(checksumMap[checksum], file)
+
+		// Se for o último arquivo, limpar a linha completamente
+		if i == len(files)-1 {
+			fmt.Printf("\r\033[K")
+		}
 	}
 	fmt.Println() // Nova linha ao terminar
 

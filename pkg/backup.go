@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -47,17 +48,29 @@ func (m *Manager) ProcessDuplicates(groups []FileGroup) error {
 	for i, group := range groups {
 		fmt.Printf("\nGroup %d:\n", i+1)
 
-		// Manter o primeiro arquivo, mover os demais
+		// Mostrar lista numerada dos arquivos
 		for j, file := range group.Files {
-			if j == 0 {
+			fmt.Printf("[%d] %s\n", j+1, file.Path)
+		}
+
+		// Perguntar qual arquivo manter
+		keepIndex := m.askWhichFileToKeep(len(group.Files))
+		if keepIndex < 0 {
+			fmt.Println("Skipping this group.")
+			continue
+		}
+
+		// Mover todos os arquivos exceto o escolhido
+		for j, file := range group.Files {
+			if j == keepIndex {
 				fmt.Printf("[%d] %s (keeping)\n", j+1, file.Path)
 				continue
 			}
 
 			if m.confirmFileMove(file.Path) {
-				// Passar o caminho do arquivo original (primeiro do grupo)
-				originalFilePath := group.Files[0].Path
-				if err := m.moveFileToBackup(file.Path, backupPath, originalFilePath); err != nil {
+				// Passar o caminho do arquivo que será mantido
+				keptFilePath := group.Files[keepIndex].Path
+				if err := m.moveFileToBackup(file.Path, backupPath, keptFilePath, group.Checksum); err != nil {
 					fmt.Printf("Error moving file %s: %v\n", file.Path, err)
 				} else {
 					fmt.Printf("→ Moved to %s\n", m.getBackupPath(file.Path, backupPath))
@@ -100,7 +113,26 @@ func (m *Manager) confirmFileMove(filePath string) bool {
 }
 
 // moveFileToBackup move um arquivo para o diretório de backup
-func (m *Manager) moveFileToBackup(filePath, backupPath, originalFilePath string) error {
+func (m *Manager) moveFileToBackup(filePath, backupPath, keptFilePath, checksum string) error {
+	// Obter caminhos absolutos a partir da raiz do sistema
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %s: %w", filePath, err)
+	}
+
+	absKeptFilePath, err := filepath.Abs(keptFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %s: %w", keptFilePath, err)
+	}
+
+	// Garantir que os caminhos são absolutos a partir da raiz
+	if !filepath.IsAbs(absFilePath) {
+		absFilePath = "/" + absFilePath
+	}
+	if !filepath.IsAbs(absKeptFilePath) {
+		absKeptFilePath = "/" + absKeptFilePath
+	}
+
 	// Criar a estrutura de diretórios no backup
 	backupFilePath := m.getBackupPath(filePath, backupPath)
 	backupDir := filepath.Dir(backupFilePath)
@@ -114,8 +146,17 @@ func (m *Manager) moveFileToBackup(filePath, backupPath, originalFilePath string
 		return fmt.Errorf("failed to move file: %w", err)
 	}
 
+	// Obter caminho absoluto do backup também
+	absBackupPath, err := filepath.Abs(backupFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for backup: %w", err)
+	}
+	if !filepath.IsAbs(absBackupPath) {
+		absBackupPath = "/" + absBackupPath
+	}
+
 	// Adicionar entrada no arquivo CSV
-	if err := m.addToCSV(originalFilePath, filePath, backupFilePath); err != nil {
+	if err := m.addToCSV(absKeptFilePath, absFilePath, absBackupPath, checksum); err != nil {
 		return fmt.Errorf("failed to add entry to CSV: %w", err)
 	}
 
@@ -123,7 +164,7 @@ func (m *Manager) moveFileToBackup(filePath, backupPath, originalFilePath string
 }
 
 // addToCSV adiciona uma entrada no arquivo CSV de backup
-func (m *Manager) addToCSV(originalPath, movedPath, backupPath string) error {
+func (m *Manager) addToCSV(keptPath, movedPath, backupPath, checksum string) error {
 	// Verificar se o arquivo CSV já existe
 	fileExists := false
 	if _, err := os.Stat(m.logFile); err == nil {
@@ -142,7 +183,7 @@ func (m *Manager) addToCSV(originalPath, movedPath, backupPath string) error {
 
 	// Se o arquivo não existia, escrever cabeçalho
 	if !fileExists {
-		header := []string{"original_path", "moved_path", "backup_path", "timestamp"}
+		header := []string{"kept_path", "moved_path", "backup_path", "checksum", "timestamp"}
 		if err := writer.Write(header); err != nil {
 			return err
 		}
@@ -150,7 +191,7 @@ func (m *Manager) addToCSV(originalPath, movedPath, backupPath string) error {
 
 	// Escrever linha de dados
 	timestamp := time.Now().Format("2006-01-02T15:04:05")
-	row := []string{originalPath, movedPath, backupPath, timestamp}
+	row := []string{keptPath, movedPath, backupPath, checksum, timestamp}
 
 	return writer.Write(row)
 }
@@ -164,4 +205,39 @@ func (m *Manager) getBackupPath(filePath, backupPath string) string {
 
 	// Se for absoluto, preservar a estrutura completa
 	return filepath.Join(backupPath, filePath)
+}
+
+// askWhichFileToKeep pergunta ao usuário qual arquivo manter
+func (m *Manager) askWhichFileToKeep(fileCount int) int {
+	// Se a flag --yes está ativada, manter o primeiro arquivo automaticamente
+	if m.yes {
+		return 0
+	}
+
+	for {
+		fmt.Printf("Which file to keep? (1-%d): ", fileCount)
+
+		reader := bufio.NewReader(os.Stdin)
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+
+		// Permitir sair digitando 'q' ou 'quit'
+		if input == "q" || input == "quit" {
+			return -1
+		}
+
+		choice, err := strconv.Atoi(input)
+		if err != nil {
+			fmt.Printf("Invalid input. Please enter a number between 1 and %d, or 'q' to quit.\n", fileCount)
+			continue
+		}
+
+		if choice < 1 || choice > fileCount {
+			fmt.Printf("Invalid choice. Please enter a number between 1 and %d.\n", fileCount)
+			continue
+		}
+
+		// Retornar índice baseado em 0
+		return choice - 1
+	}
 }
