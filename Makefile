@@ -5,7 +5,7 @@ BINARY_NAME=redup
 VERSION=$(shell git tag -l --sort=-v:refname | head -n 1 | sed 's/^v//' 2>/dev/null || echo "dev")
 GIT_COMMIT=$(shell git rev-parse --short HEAD)
 BUILD_TIME=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS=-ldflags "-X github.com/dakoctba/redup/cmd.version=$(VERSION) -X github.com/dakoctba/redup/cmd.buildTime=$(BUILD_TIME) -X github.com/dakoctba/redup/cmd.gitCommit=$(GIT_COMMIT)"
+LDFLAGS=-ldflags "-X github.com/dakoctba/redup/cmd.version=$(VERSION) -X github.com/dakoctba/redup/cmd.buildTime=$(BUILD_TIME) -X github.com/dakoctba/redup/cmd.gitCommit=$(GIT_COMMIT) -X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)"
 
 # Detecção do sistema operacional
 UNAME_S := $(shell uname -s)
