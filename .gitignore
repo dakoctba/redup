@@ -1,47 +1,30 @@
-# Binaries for programs and plugins
+# Binários para programas e plugins
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
-*.test
+# Arquivos de teste, especificamente
+*_test.go
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+# Diretórios de saída
+bin/
+!bin/release.sh
+!bin/update_version.sh
+dist/
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
 
-# Go workspace file
-go.work
-
-# Build artifacts
-redup
-*.exe
-*.dll
-*.so
-*.dylib
-
-# IDE files
-.vscode/
+# Arquivos de IDE
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
 
-# OS generated files
+# Arquivos de sistema
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# Backup directories created by redup
-*_backup/
-
-# Log files
-*.log

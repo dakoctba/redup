@@ -8,4 +8,5 @@ type Config struct {
 	BackupDir string
 	DryRun    bool
 	JSON      bool
+	Version   bool
 }

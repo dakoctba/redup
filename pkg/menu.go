@@ -43,6 +43,8 @@ func (m *Menu) Run() {
 		case 4:
 			m.exportResults()
 		case 5:
+			m.showVersion()
+		case 6:
 			fmt.Println("Goodbye!")
 			os.Exit(0)
 		default:
@@ -60,7 +62,8 @@ func (m *Menu) showMenu() {
 	fmt.Println("[2] Show duplicate summary")
 	fmt.Println("[3] Remove duplicates")
 	fmt.Println("[4] Export results (JSON/CSV)")
-	fmt.Println("[5] Exit")
+	fmt.Println("[5] Show version")
+	fmt.Println("[6] Exit")
 }
 
 // getChoice obtém a escolha do usuário
@@ -157,4 +160,11 @@ func (m *Menu) exportResults() {
 	default:
 		fmt.Println("Invalid choice.")
 	}
+}
+
+// showVersion exibe informações da versão
+func (m *Menu) showVersion() {
+	fmt.Println("redup version dev")
+	fmt.Println("Build time: unknown")
+	fmt.Println("Git commit: unknown")
 }

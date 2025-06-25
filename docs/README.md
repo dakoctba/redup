@@ -1,190 +1,248 @@
-# redup - Duplicate File Manager
+# Redup - Developer Documentation
 
-`redup` é um utilitário CLI em Go para detectar e gerenciar arquivos duplicados. Inspirado no projeto [scopy](https://github.com/dakoctba/scopy), o `redup` oferece uma interface interativa e de linha de comando para identificar arquivos duplicados por conteúdo (usando checksums SHA-256 ou MD5) e movê-los para um diretório de backup com estrutura preservada.
+This documentation contains technical information about the development, compilation, and source code of Redup.
 
-## Características
+## Development Requirements
 
-- **Detecção por Conteúdo**: Usa checksums SHA-256 ou MD5 para identificar duplicatas independentemente do nome do arquivo
-- **Interface Dupla**: Modo CLI para automação e modo interativo para uso manual
-- **Backup Seguro**: Move duplicatas para diretório de backup com timestamp, preservando a estrutura original
-- **Filtros Configuráveis**: Tamanho mínimo de arquivo, algoritmo de checksum personalizável
-- **Exportação**: Resultados em JSON ou CSV
-- **Código Modular**: Arquitetura limpa e testável seguindo padrões do projeto scopy
+- Go 1.21 or higher
+- Git
+- [GoReleaser](https://goreleaser.com/install/) (for releases)
 
-## Instalação
+## Installation for Development
 
-### Via Go Install
-```bash
-go install github.com/dakoctba/redup/cmd/redup@latest
-```
+### Prerequisites
 
-### Compilação Local
+- Go 1.21 or higher
+
+### Cloning the Repository
+
 ```bash
 git clone https://github.com/dakoctba/redup.git
 cd redup
-go build -o redup cmd/redup/main.go
 ```
 
-## Uso
+### Installing Dependencies
 
-### Modo Interativo
-Execute sem argumentos para iniciar o menu interativo:
 ```bash
-redup
+go mod tidy
 ```
 
-O menu oferece as seguintes opções:
-- `[1] Scan directory` - Escanear diretório para duplicatas
-- `[2] Show duplicate summary` - Exibir resumo das duplicatas encontradas
-- `[3] Remove duplicates` - Mover duplicatas para backup
-- `[4] Export results` - Exportar resultados em JSON ou CSV
-- `[5] Exit` - Sair do programa
+## Compilation
 
-### Modo CLI
+### Using Make
+
+The project includes a Makefile to facilitate the development process:
+
 ```bash
-# Escanear diretório atual
-redup --dir .
+# Build the project
+make build
 
-# Escanear diretório específico com tamanho mínimo
-redup --dir ~/Documents --min-size 1048576
+# Run tests
+make test
 
-# Usar MD5 em vez de SHA-256
-redup --dir ~/Pictures --checksum md5
+# Run the application with arguments
+make run ARGS="--dry-run ."
 
-# Modo dry-run (apenas simular)
-redup --dir ~/Downloads --dry-run
+# Clean build files
+make clean
 
-# Exportar resultados em JSON
-redup --dir ~/Music --json
+# Install locally
+make install
 
-# Especificar diretório de backup
-redup --dir ~/Videos --backup-dir ~/backups
+# Uninstall
+make uninstall
+
+# Display Makefile help
+make help
 ```
 
-### Flags Disponíveis
+### Using Go Directly
 
-| Flag | Descrição | Padrão |
-|------|-----------|--------|
-| `--dir` | Diretório para escanear | `.` (diretório atual) |
-| `--checksum` | Algoritmo de checksum (`sha256` ou `md5`) | `sha256` |
-| `--min-size` | Tamanho mínimo de arquivo em bytes | `0` (sem limite) |
-| `--backup-dir` | Diretório base para backup | `.` (diretório atual) |
-| `--dry-run` | Simular ações sem mover arquivos | `false` |
-| `--json` | Exportar resultados em JSON | `false` |
-| `--help` | Mostrar ajuda | - |
-
-## Como Funciona
-
-### 1. Detecção de Duplicatas
-O `redup` escaneia recursivamente o diretório especificado e:
-- Filtra arquivos por tamanho mínimo (se especificado)
-- Calcula checksums usando o algoritmo escolhido
-- Agrupa arquivos com checksums idênticos
-
-### 2. Processamento de Duplicatas
-Quando o usuário escolhe remover duplicatas:
-1. Solicita confirmação para criar diretório de backup
-2. Cria diretório com timestamp: `YYYYMMDDhhmmss_backup`
-3. Para cada grupo de duplicatas:
-   - Mantém o primeiro arquivo no local original
-   - Pergunta sobre cada arquivo adicional
-   - Move arquivos confirmados para backup, preservando estrutura
-
-### 3. Estrutura de Backup
-Se um arquivo duplicado está em `/home/user/docs/report.pdf` e o backup é `20250625124530_backup`, o novo local será:
-```
-./20250625124530_backup/home/user/docs/report.pdf
-```
-
-## Estrutura do Projeto
-
-```
-redup/
-├── cmd/redup/          # Executável principal
-│   └── main.go
-├── scanner/            # Navegação de diretórios
-│   ├── scanner.go
-│   └── scanner_test.go
-├── hasher/             # Cálculo de checksums
-│   ├── hasher.go
-│   └── hasher_test.go
-├── deduplicator/       # Agrupamento e filtragem
-│   ├── deduplicator.go
-│   └── deduplicator_test.go
-├── reporter/           # Relatórios e exportação
-│   └── reporter.go
-├── menu/               # Interface interativa
-│   └── menu.go
-├── backup/             # Gerenciamento de backup
-│   └── backup.go
-├── go.mod
-├── go.sum
-└── README.md
-```
-
-### Relação com o Projeto scopy
-
-O `redup` reutiliza padrões de código do projeto [scopy](https://github.com/dakoctba/scopy), incluindo:
-- **Arquitetura Modular**: Separação clara de responsabilidades em pacotes
-- **Padrões de CLI**: Uso de flags e parsing de argumentos
-- **Tratamento de Erros**: Estratégias consistentes de error handling
-- **Testes Unitários**: Cobertura de testes para funcionalidades críticas
-
-## Exemplos de Uso
-
-### Exemplo 1: Limpeza de Downloads
 ```bash
-# Encontrar duplicatas maiores que 1MB
-redup --dir ~/Downloads --min-size 1048576
+# Build the project
+go build
 
-# Resultado:
-# Found 3 duplicate groups.
-# Total space that can be freed: 45.2 MB
+# Install the binary
+go install
 ```
 
-### Exemplo 2: Backup de Fotos
+## Project Structure
+
+```
+.
+├── cmd/
+│   └── root.go      # Main command and configuration using Cobra
+├── pkg/
+│   ├── scanner.go    # File scanning logic
+│   ├── hasher.go     # Checksum calculation
+│   ├── deduplicator.go # Duplicate detection
+│   ├── backup.go     # Backup management
+│   ├── menu.go       # Interactive menu
+│   ├── reporter.go   # Statistics and reporting
+│   ├── gitignore.go  # .gitignore processing
+│   └── config.go     # Configuration management
+├── bin/
+│   ├── release.sh         # Release creation script
+│   └── update_version.sh  # Version update script
+├── docs/
+│   └── README.md          # Technical documentation
+├── main.go          # Entry point
+├── go.mod           # Dependency management
+├── .goreleaser.yml  # GoReleaser configuration
+├── Makefile         # Task automation
+└── README.md        # User documentation
+```
+
+## Running Tests
+
 ```bash
-# Usar MD5 para fotos (mais rápido)
-redup --dir ~/Pictures --checksum md5 --backup-dir ~/photo_backups
+go test ./pkg/...
 ```
 
-### Exemplo 3: Análise sem Ação
+## Version Management and Releases
+
+Redup uses Git tags for version control following Semantic Versioning (SemVer).
+
+### Release Process
+
+The project includes an interactive process to create new versions and releases:
+
 ```bash
-# Apenas analisar sem mover arquivos
-redup --dir ~/Documents --dry-run --json > duplicates.json
+make release
 ```
 
-## Códigos de Saída
+This command will:
+1. Show the current version (based on Git tags)
+2. Suggest options for the next version following Semantic Versioning
+3. Allow you to choose between patch, minor, major, or a custom version
+4. Request confirmation of the operation
+5. Create a Git tag
+6. Push the tag to GitHub
+7. Run GoReleaser to generate the release
 
-- `0` - Sucesso
-- `1` - Cancelado pelo usuário
-- `2` - Erro (diretório inexistente, permissões, etc.)
+### Release Scripts
 
-## Testes
+#### update_version.sh
 
-Execute os testes unitários:
+This script:
+- Gets the latest version from Git tags
+- Suggests the next version (patch, minor, or major)
+- Allows manual version selection
+- Creates a Git tag and publishes it to the remote repository
+- Calls GoReleaser to create the release
+
+#### release.sh
+
+This script:
+- Manages the release process
+- Can be used directly (without interactivity)
+- Accepts options like `--snapshot`, `--clean`, `--no-clean`
+- Executes GoReleaser with the appropriate settings
+
 ```bash
-go test ./...
+# Run directly (uses Git tag version)
+bin/release.sh
+
+# Create a snapshot (for testing)
+bin/release.sh --snapshot
+
+# Preserve the dist/ directory
+bin/release.sh --no-clean
+
+# Use a specific version
+bin/release.sh --version=1.2.3
 ```
 
-Execute testes com cobertura:
+### GoReleaser
+
+Redup uses [GoReleaser](https://goreleaser.com) to automate the release process for multiple platforms.
+
+Requirements:
+- GoReleaser installed
+- GitHub token configured (in the .env file)
+
+The GoReleaser configuration is in the `.goreleaser.yml` file.
+
+### Manual Release
+
+If you prefer to run GoReleaser directly:
+
 ```bash
-go test -cover ./...
+# Export GitHub token
+export GITHUB_TOKEN=your_github_token
+
+# Run GoReleaser
+goreleaser release --clean
 ```
 
-## Contribuição
+## Environment Configuration
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+Redup uses environment variables for configuration, which can be defined in a `.env` file:
 
-## Licença
+```
+GITHUB_TOKEN=your_github_token_here
+DEBUG=true
+LOG_LEVEL=info
+```
 
-Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
+## Contributing
 
-## Agradecimentos
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add Amazing Feature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-- Inspirado no projeto [scopy](https://github.com/dakoctba/scopy)
-- Comunidade Go por ferramentas e bibliotecas excelentes
+## Implementation Details
+
+### File Processing
+
+The `pkg` package contains the main logic for file processing:
+- Recursive directory listing with `.gitignore` support
+- Checksum calculation (SHA-256 and MD5)
+- Duplicate detection and grouping
+- Safe backup operations
+- Interactive menu system
+
+### Command Line Interface
+
+The CLI is implemented using the [Cobra](https://github.com/spf13/cobra) library, with commands defined in `cmd/root.go`.
+
+### Key Features
+
+1. **Scanner**: Recursively scans directories, respecting `.gitignore` rules
+2. **Hasher**: Calculates checksums for duplicate detection
+3. **Deduplicator**: Groups files by content using checksums
+4. **Backup Manager**: Safely moves duplicate files to timestamped directories
+5. **Interactive Menu**: User-friendly interface for managing duplicates
+6. **Reporter**: Generates statistics and JSON output
+
+### Dependencies
+
+- **Cobra**: CLI framework
+- **Godotenv**: Environment variable loading
+- **Standard library**: File operations, crypto, etc.
+
+## Testing Strategy
+
+The project includes comprehensive tests for:
+- File scanning functionality
+- Checksum calculation
+- Duplicate detection
+- `.gitignore` processing
+- Backup operations
+- Interactive menu
+
+Run tests with:
+```bash
+make test
+```
+
+## Code Style
+
+The project follows Go conventions and best practices:
+- Use `gofmt` for code formatting
+- Follow Go naming conventions
+- Include comprehensive comments
+- Write unit tests for all functions
+- Use meaningful variable and function names

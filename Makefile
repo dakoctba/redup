@@ -1,34 +1,86 @@
-.PHONY: build test clean install
+# Makefile for redup
+# Based on scopy project structure
 
-# Build the application
+.PHONY: help build test clean install uninstall run release snapshot
+
+# Default target
+help:
+	@echo "Available targets:"
+	@echo "  build     - Build the project"
+	@echo "  test      - Run tests"
+	@echo "  clean     - Clean build files"
+	@echo "  install   - Install locally"
+	@echo "  uninstall - Uninstall"
+	@echo "  run       - Run with arguments (use ARGS='arg1 arg2')"
+	@echo "  release   - Create a new release"
+	@echo "  snapshot  - Create a snapshot release"
+	@echo "  help      - Show this help"
+
+# Build the project
 build:
-	go build -o redup .
+	go build -o redup
 
 # Run tests
 test:
-	go test ./...
+	go test ./pkg/...
 
-# Run tests with coverage
-test-coverage:
-	go test -cover ./...
-
-# Clean build artifacts
+# Clean build files
 clean:
 	rm -f redup
-	rm -f *.exe
-	rm -f *.dll
-	rm -f *.so
-	rm -f *.dylib
+	rm -rf dist/
 
-# Install the application
+# Install locally
 install:
-	go install .
+	go install
 
-# Build for release
+# Uninstall
+uninstall:
+	go clean -i
+
+# Run the application with arguments
+run:
+	@if [ -z "$(ARGS)" ]; then \
+		echo "Usage: make run ARGS='arg1 arg2'"; \
+		echo "Example: make run ARGS='--dry-run .'"; \
+		exit 1; \
+	fi
+	./redup $(ARGS)
+
+# Create a new release
 release:
-	GOOS=linux GOARCH=amd64 go build -o redup-linux-amd64 .
-	GOOS=darwin GOARCH=amd64 go build -o redup-darwin-amd64 .
-	GOOS=windows GOARCH=amd64 go build -o redup-windows-amd64.exe .
+	@echo "Creating a new release..."
+	@bin/release.sh
 
-# Default target
-all: build test
+# Create a snapshot release
+snapshot:
+	@echo "Creating a snapshot release..."
+	@bin/release.sh --snapshot
+
+# Update dependencies
+deps:
+	go mod tidy
+	go mod download
+
+# Format code
+fmt:
+	go fmt ./...
+
+# Lint code
+lint:
+	golangci-lint run
+
+# Check for security vulnerabilities
+security:
+	gosec ./...
+
+# Generate documentation
+docs:
+	@echo "Generating documentation..."
+	@echo "Documentation is in README.md and docs/README.md"
+
+# Development setup
+dev-setup: deps
+	@echo "Development environment setup complete"
+	@echo "Run 'make build' to build the project"
+	@echo "Run 'make test' to run tests"
+	@echo "Run 'make run ARGS=\"--help\"' to see usage"
