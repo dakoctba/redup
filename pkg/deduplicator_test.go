@@ -1,15 +1,13 @@
-package deduplicator
+package pkg
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/dakoctba/redup/scanner"
 )
 
-func TestNewHasher(t *testing.T) {
-	hasher := NewHasher("sha256")
+func TestNewDeduplicatorHasher(t *testing.T) {
+	hasher := NewDeduplicatorHasher("sha256")
 	if hasher.hasher.GetAlgorithm() != "sha256" {
 		t.Errorf("Expected algorithm 'sha256', got '%s'", hasher.hasher.GetAlgorithm())
 	}
@@ -45,20 +43,20 @@ func TestFilterDuplicates(t *testing.T) {
 	}
 
 	// Criar FileInfo structs
-	var fileInfos []scanner.FileInfo
+	var fileInfos []FileInfo
 	for _, file := range files {
 		info, err := os.Stat(file)
 		if err != nil {
 			t.Fatalf("Failed to stat file %s: %v", file, err)
 		}
-		fileInfos = append(fileInfos, scanner.FileInfo{
+		fileInfos = append(fileInfos, FileInfo{
 			Path: file,
 			Size: info.Size(),
 		})
 	}
 
 	// Agrupar por checksum
-	hasher := NewHasher("sha256")
+	hasher := NewDeduplicatorHasher("sha256")
 	groups, err := hasher.GroupByChecksum(fileInfos)
 	if err != nil {
 		t.Fatalf("Failed to group by checksum: %v", err)
@@ -82,7 +80,7 @@ func TestGetTotalDuplicateSize(t *testing.T) {
 	groups := []FileGroup{
 		{
 			Checksum: "hash1",
-			Files: []scanner.FileInfo{
+			Files: []FileInfo{
 				{Path: "file1.txt", Size: 100},
 				{Path: "file2.txt", Size: 100},
 				{Path: "file3.txt", Size: 100},
@@ -91,7 +89,7 @@ func TestGetTotalDuplicateSize(t *testing.T) {
 		},
 		{
 			Checksum: "hash2",
-			Files: []scanner.FileInfo{
+			Files: []FileInfo{
 				{Path: "file4.txt", Size: 200},
 				{Path: "file5.txt", Size: 200},
 			},
@@ -99,7 +97,7 @@ func TestGetTotalDuplicateSize(t *testing.T) {
 		},
 		{
 			Checksum: "hash3",
-			Files: []scanner.FileInfo{
+			Files: []FileInfo{
 				{Path: "file6.txt", Size: 50},
 			},
 			Size: 50,
@@ -131,14 +129,14 @@ func TestFilterDuplicatesNoDuplicates(t *testing.T) {
 	groups := []FileGroup{
 		{
 			Checksum: "hash1",
-			Files: []scanner.FileInfo{
+			Files: []FileInfo{
 				{Path: "file1.txt", Size: 100},
 			},
 			Size: 100,
 		},
 		{
 			Checksum: "hash2",
-			Files: []scanner.FileInfo{
+			Files: []FileInfo{
 				{Path: "file2.txt", Size: 200},
 			},
 			Size: 200,

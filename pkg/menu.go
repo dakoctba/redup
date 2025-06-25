@@ -1,4 +1,4 @@
-package menu
+package pkg
 
 import (
 	"bufio"
@@ -6,39 +6,24 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/dakoctba/redup/backup"
-	"github.com/dakoctba/redup/deduplicator"
-	"github.com/dakoctba/redup/reporter"
-	"github.com/dakoctba/redup/scanner"
 )
-
-// Config representa a configuração da aplicação
-type Config struct {
-	Dir       string
-	Checksum  string
-	MinSize   int64
-	BackupDir string
-	DryRun    bool
-	JSON      bool
-}
 
 // Menu representa o menu interativo
 type Menu struct {
 	config     *Config
-	duplicates []deduplicator.FileGroup
-	scanner    *scanner.Scanner
-	hasher     *deduplicator.Hasher
-	backupMgr  *backup.Manager
+	duplicates []FileGroup
+	scanner    *Scanner
+	hasher     *DeduplicatorHasher
+	backupMgr  *Manager
 }
 
 // NewMenu cria uma nova instância do menu
 func NewMenu(config *Config) *Menu {
 	return &Menu{
 		config:    config,
-		scanner:   scanner.NewScanner(config.MinSize),
-		hasher:    deduplicator.NewHasher(config.Checksum),
-		backupMgr: backup.NewManager(config.BackupDir),
+		scanner:   NewScanner(config.MinSize),
+		hasher:    NewDeduplicatorHasher(config.Checksum),
+		backupMgr: NewManager(config.BackupDir),
 	}
 }
 
@@ -121,7 +106,7 @@ func (m *Menu) scanDirectory() {
 		return
 	}
 
-	m.duplicates = deduplicator.FilterDuplicates(fileGroups)
+	m.duplicates = FilterDuplicates(fileGroups)
 	fmt.Printf("Found %d duplicate groups.\n", len(m.duplicates))
 }
 
@@ -132,7 +117,7 @@ func (m *Menu) showDuplicateSummary() {
 		return
 	}
 
-	reporter.PrintSummary(m.duplicates)
+	PrintSummary(m.duplicates)
 }
 
 // removeDuplicates remove as duplicatas
@@ -162,11 +147,11 @@ func (m *Menu) exportResults() {
 
 	switch choice {
 	case 1:
-		if err := reporter.ExportJSON(m.duplicates, os.Stdout); err != nil {
+		if err := ExportJSON(m.duplicates, os.Stdout); err != nil {
 			fmt.Printf("Error exporting JSON: %v\n", err)
 		}
 	case 2:
-		if err := reporter.ExportCSV(m.duplicates, os.Stdout); err != nil {
+		if err := ExportCSV(m.duplicates, os.Stdout); err != nil {
 			fmt.Printf("Error exporting CSV: %v\n", err)
 		}
 	default:

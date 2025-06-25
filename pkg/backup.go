@@ -1,4 +1,4 @@
-package backup
+package pkg
 
 import (
 	"bufio"
@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/dakoctba/redup/deduplicator"
 )
 
 // Manager é responsável por gerenciar backups de arquivos duplicados
@@ -24,7 +22,7 @@ func NewManager(backupDir string) *Manager {
 }
 
 // ProcessDuplicates processa as duplicatas e move para backup
-func (m *Manager) ProcessDuplicates(groups []deduplicator.FileGroup) error {
+func (m *Manager) ProcessDuplicates(groups []FileGroup) error {
 	if len(groups) == 0 {
 		return nil
 	}

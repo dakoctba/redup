@@ -1,16 +1,14 @@
-package reporter
+package pkg
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
-
-	"github.com/dakoctba/redup/deduplicator"
 )
 
 // PrintSummary exibe um resumo das duplicatas encontradas
-func PrintSummary(groups []deduplicator.FileGroup) {
+func PrintSummary(groups []FileGroup) {
 	if len(groups) == 0 {
 		fmt.Println("No duplicate files found.")
 		return
@@ -18,7 +16,7 @@ func PrintSummary(groups []deduplicator.FileGroup) {
 
 	fmt.Printf("Found %d duplicate groups.\n\n", len(groups))
 
-	totalSize := deduplicator.GetTotalDuplicateSize(groups)
+	totalSize := GetTotalDuplicateSize(groups)
 	fmt.Printf("Total space that can be freed: %s\n\n", formatBytes(totalSize))
 
 	for i, group := range groups {
@@ -31,7 +29,7 @@ func PrintSummary(groups []deduplicator.FileGroup) {
 }
 
 // ExportJSON exporta os resultados em formato JSON
-func ExportJSON(groups []deduplicator.FileGroup, writer io.Writer) error {
+func ExportJSON(groups []FileGroup, writer io.Writer) error {
 	type FileInfo struct {
 		Path string `json:"path"`
 		Size int64  `json:"size"`
@@ -66,7 +64,7 @@ func ExportJSON(groups []deduplicator.FileGroup, writer io.Writer) error {
 }
 
 // ExportCSV exporta os resultados em formato CSV
-func ExportCSV(groups []deduplicator.FileGroup, writer io.Writer) error {
+func ExportCSV(groups []FileGroup, writer io.Writer) error {
 	fmt.Fprintln(writer, "Group,Checksum,Size,File")
 
 	for i, group := range groups {

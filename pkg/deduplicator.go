@@ -1,34 +1,31 @@
-package deduplicator
+package pkg
 
 import (
 	"fmt"
-
-	"github.com/dakoctba/redup/hasher"
-	"github.com/dakoctba/redup/scanner"
 )
 
 // FileGroup representa um grupo de arquivos com o mesmo checksum
 type FileGroup struct {
 	Checksum string
-	Files    []scanner.FileInfo
+	Files    []FileInfo
 	Size     int64
 }
 
-// Hasher é responsável por agrupar arquivos por checksum
-type Hasher struct {
-	hasher *hasher.Hasher
+// DeduplicatorHasher é responsável por agrupar arquivos por checksum
+type DeduplicatorHasher struct {
+	hasher *Hasher
 }
 
-// NewHasher cria uma nova instância do hasher para deduplicação
-func NewHasher(algorithm string) *Hasher {
-	return &Hasher{
-		hasher: hasher.NewHasher(algorithm),
+// NewDeduplicatorHasher cria uma nova instância do hasher para deduplicação
+func NewDeduplicatorHasher(algorithm string) *DeduplicatorHasher {
+	return &DeduplicatorHasher{
+		hasher: NewHasher(algorithm),
 	}
 }
 
 // GroupByChecksum agrupa arquivos por checksum
-func (h *Hasher) GroupByChecksum(files []scanner.FileInfo) ([]FileGroup, error) {
-	checksumMap := make(map[string][]scanner.FileInfo)
+func (h *DeduplicatorHasher) GroupByChecksum(files []FileInfo) ([]FileGroup, error) {
+	checksumMap := make(map[string][]FileInfo)
 
 	for _, file := range files {
 		checksum, err := h.hasher.CalculateChecksum(file.Path)
